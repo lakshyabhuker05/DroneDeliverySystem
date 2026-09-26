@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Customer Portal - Drone Delivery System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+
+<div class="navbar">
+  <div class="brand"><span class="dot"></span> DroneDeliver<span style="color:var(--brand-2)">X</span></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="customer.html" class="active">Customer Portal</a>
+    <a href="admin.html">Admin Panel</a>
+  </nav>
+  <div>
+    <span class="sub" id="whoami" style="margin-right:14px;color:var(--muted)"></span>
+    <button class="btn small" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="book">Book Delivery</div>
+    <div class="tab" data-tab="history">Delivery History</div>
+    <div class="tab" data-tab="track">Track Package</div>
+    <div class="tab" data-tab="chat">AI Support Chat</div>
+  </div>
+
+  <!-- BOOK -->
+  <div id="tab-book" class="tab-content">
+    <div class="grid cols-2">
+      <div class="glass-card">
+        <h3 style="margin-bottom:14px">New Delivery Request</h3>
+        <form id="bookForm">
+          <label>Package Type</label>
+          <select id="pkgType"></select>
+          <label>Package Weight (kg)</label>
+          <input type="number" id="pkgWeight" step="0.1" min="0.1" max="50" required />
+          <div class="row">
+            <div><label>Pickup City</label><select id="pickupCity"></select></div>
+            <div><label>Destination City</label><select id="destCity"></select></div>
+          </div>
+          <label>Priority</label>
+          <select id="priority">
+            <option value="1">Normal (FIFO queue)</option>
+            <option value="2">Urgent (priority queue)</option>
+            <option value="3">Critical / Medical</option>
+          </select>
+          <button class="btn primary" style="margin-top:18px;width:100%">Book Delivery</button>
+        </form>
+      </div>
+      <div class="glass-card">
+        <h3 style="margin-bottom:14px">Route Preview (Dijkstra)</h3>
+        <div id="routePreview" class="sub">Choose pickup &amp; destination to preview the shortest route.</div>
+        <div id="routeVizBox"></div>
+        <div class="ai-box" id="aiRouteTip" style="display:none"></div>
+        <div class="ai-box" id="aiTimePredict" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="tab-history" class="tab-content" style="display:none">
+    <div class="glass-card">
+      <h3 style="margin-bottom:14px">My Delivery History (most recent first)</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Package</th><th>Route</th><th>Weight</th><th>Status</th><th>ETA</th><th>Booked</th><th></th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TRACK -->
+  <div id="tab-track" class="tab-content" style="display:none">
+    <div class="glass-card">
+      <h3 style="margin-bottom:14px">Track a Package</h3>
+      <div class="row">
+        <div><label>Delivery ID</label><input type="number" id="trackId" /></div>
+        <div style="align-self:flex-end"><button class="btn primary" onclick="trackPackage()" style="margin-top:12px">Track</button></div>
+      </div>
+      <div id="trackResult" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="tab-chat" class="tab-content" style="display:none">
+    <div class="glass-card">
+      <h3 style="margin-bottom:14px">AI Customer Support (Cloud AI)</h3>
+      <div class="chat-window" id="chatWindow"></div>
+      <div class="row">
+        <input type="text" id="chatInput" placeholder="Ask about your delivery, drones, weather, etc." />
+        <button class="btn primary" onclick="sendChat()" style="width:120px">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Drone Delivery Management System &copy; 2026 &mdash; C++ / DSA powered backend</div>
+
+<script src="js/api.js"></script>
+<script src="js/route-animation.js"></script>
+<script src="js/customer.js"></script>
+</body>
+</html>

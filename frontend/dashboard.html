@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Dashboard - Drone Delivery System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="brand"><span class="dot"></span> DroneDeliver<span style="color:var(--brand-2)">X</span></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="customer.html">Customer Portal</a>
+    <a href="admin.html">Admin Panel</a>
+  </nav>
+</div>
+
+<div class="container">
+  <div class="section-title"><h2>Live Operations Dashboard</h2>
+    <button class="btn small" onclick="loadAll()">⟳ Refresh</button>
+  </div>
+
+  <div class="grid cols-4" id="statCards">
+    <!-- filled by JS -->
+  </div>
+
+  <div class="section-title"><h2>Live 3D Fleet</h2></div>
+  <div class="scene-wrap" id="fleetScene" style="height:380px">
+    <div class="scene-legend">
+      <span><i style="background:#22c55e"></i>Available</span>
+      <span><i style="background:#3b82f6"></i>Assigned</span>
+      <span><i style="background:#22d3ee"></i>In Transit</span>
+      <span><i style="background:#f59e0b"></i>Charging</span>
+      <span><i style="background:#ef4444"></i>Offline</span>
+    </div>
+  </div>
+  <div class="sub" style="margin-top:8px">Hover any drone above for its live status, battery, speed and location &mdash; pulled straight from <code>/api/drones</code>.</div>
+
+  <div class="grid cols-2" style="margin-top:24px">
+    <div class="glass-card">
+      <h3>Delivery Status Breakdown</h3>
+      <canvas id="statusChart" height="220"></canvas>
+    </div>
+    <div class="glass-card">
+      <h3>Fleet Battery Levels</h3>
+      <canvas id="batteryChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="section-title"><h2>Data Structures &amp; Algorithms in Action</h2></div>
+  <div class="glass-card">
+    <div class="dsa-tabs">
+      <button class="active" data-dsa="dijkstra">Dijkstra Routing</button>
+      <button data-dsa="queue">Priority Queue</button>
+      <button data-dsa="bst">Drone BST</button>
+      <button data-dsa="merge">Merge Sort Reports</button>
+    </div>
+    <div class="dsa-panel active" id="dsa-dijkstra"><div class="sub">Loading…</div></div>
+    <div class="dsa-panel" id="dsa-queue"><div class="sub">Loading…</div></div>
+    <div class="dsa-panel" id="dsa-bst"><div class="sub">Loading…</div></div>
+    <div class="dsa-panel" id="dsa-merge"><div class="sub">Loading…</div></div>
+  </div>
+
+  <div class="section-title"><h2>AI Insight of the Moment</h2></div>
+  <div class="glass-card">
+    <div class="sub">Cloud AI (Gemini/OpenAI) optimization suggestion based on current pending deliveries &amp; fleet availability:</div>
+    <div class="ai-box" id="aiOptimize">Loading AI insight…</div>
+  </div>
+</div>
+
+<div class="footer">Drone Delivery Management System &copy; 2026 &mdash; C++ / DSA powered backend</div>
+
+<script src="js/api.js"></script>
+<script src="js/three-scene.js"></script>
+<script src="js/drone.js"></script>
+<script src="js/fleet.js"></script>
+<script src="js/dsa-viz.js"></script>
+<script src="js/animations.js"></script>
+<script>
+let statusChart, batteryChart, fleetScene, dsaInitialized = false;
+
+function statCard(icon, cls, label, count, suffix, sub) {
+  return `<div class="glass-card">
+    <div class="stat-icon ${cls}">${icon}</div>
+    <h3>${label}</h3>
+    <div class="stat" data-count="${count}" data-suffix="${suffix || ""}">0${suffix || ""}</div>
+    <div class="sub">${sub}</div>
+  </div>`;
+}
+
+async function loadStats() {
+  const s = await apiGet("/api/dashboard");
+  document.getElementById("statCards").innerHTML =
+    statCard("📦","blue","Total Deliveries", s.totalDeliveries, "", s.pendingDeliveries + " pending now") +
+    statCard("🚁","green","Active Drones", s.activeDrones, " / " + s.totalDrones, s.availableDrones + " available") +
+    statCard("🔋","amber","Avg. Battery", Math.round(s.avgBattery), "%", "Across whole fleet") +
+    statCard("✅","red","Completed", s.completedDeliveries, "", "Deliveries fulfilled");
+  DDX.animateCounters(document.getElementById("statCards"));
+  return s;
+}
+
+async function loadCharts() {
+  const deliveries = await apiGet("/api/deliveries");
+  const counts = { PENDING: 0, ASSIGNED: 0, IN_TRANSIT: 0, DELIVERED: 0, CANCELLED: 0 };
+  deliveries.forEach(d => counts[d.status] = (counts[d.status] || 0) + 1);
+
+  const ctx1 = document.getElementById("statusChart");
+  if (statusChart) statusChart.destroy();
+  statusChart = new Chart(ctx1, {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{ data: Object.values(counts), backgroundColor: ["#f59e0b","#3b82f6","#22d3ee","#22c55e","#ef4444"] }]
+    },
+    options: { plugins: { legend: { labels: { color: "#e7ecf7" } } } }
+  });
+
+  const drones = await apiGet("/api/drones");
+  const ctx2 = document.getElementById("batteryChart");
+  if (batteryChart) batteryChart.destroy();
+  batteryChart = new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: drones.map(d => "#" + d.id + " " + d.model),
+      datasets: [{ label: "Battery %", data: drones.map(d => d.battery), backgroundColor: "#3b82f6" }]
+    },
+    options: {
+      scales: {
+        x: { ticks: { color: "#93a2c2" }, grid: { color: "#23324d" } },
+        y: { ticks: { color: "#93a2c2" }, grid: { color: "#23324d" }, max: 100 }
+      },
+      plugins: { legend: { labels: { color: "#e7ecf7" } } }
+    }
+  });
+}
+
+async function loadAI() {
+  try {
+    const r = await apiGet("/api/ai/optimize");
+    document.getElementById("aiOptimize").textContent = r.result;
+  } catch { document.getElementById("aiOptimize").textContent = "AI insight unavailable."; }
+}
+
+async function loadAll() {
+  await loadStats();
+  await loadCharts();
+  await loadAI();
+  if (!fleetScene) fleetScene = DDX.initFleetScene("fleetScene");
+  else fleetScene.refresh();
+  if (!dsaInitialized) { DDX.initDSAPanels(); dsaInitialized = true; }
+}
+loadAll();
+</script>
+</body>
+</html>

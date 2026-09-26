@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Admin Panel - Drone Delivery System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="brand"><span class="dot"></span> DroneDeliver<span style="color:var(--brand-2)">X</span> <span class="sub" style="margin-left:8px">Admin</span></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="customer.html">Customer Portal</a>
+    <a href="admin.html" class="active">Admin Panel</a>
+  </nav>
+</div>
+
+<div class="container" id="adminGate">
+  <div class="glass-card" style="max-width:420px;margin:60px auto">
+    <h3 style="margin-bottom:14px">Admin Access</h3>
+    <label>Admin Passcode</label>
+    <input type="password" id="adminPass" placeholder="Default: admin123" />
+    <button class="btn primary" style="margin-top:16px;width:100%" onclick="checkAdmin()">Enter Admin Panel</button>
+  </div>
+</div>
+
+<div class="container" id="adminPanel" style="display:none">
+  <div class="tabs">
+    <div class="tab active" data-tab="drones">Drones</div>
+    <div class="tab" data-tab="deliveries">Assign Deliveries</div>
+    <div class="tab" data-tab="customers">Customers</div>
+    <div class="tab" data-tab="reports">Reports</div>
+  </div>
+
+  <!-- DRONES -->
+  <div id="tab-drones" class="tab-content">
+    <div class="grid cols-2">
+      <div class="glass-card">
+        <h3 style="margin-bottom:14px">Add Drone</h3>
+        <form id="addDroneForm">
+          <label>Model Name</label><input type="text" id="dModel" required />
+          <div class="row">
+            <div><label>Battery %</label><input type="number" id="dBattery" value="100" /></div>
+            <div><label>Speed (km/h)</label><input type="number" id="dSpeed" value="45" /></div>
+          </div>
+          <div class="row">
+            <div><label>Max Weight (kg)</label><input type="number" id="dMaxWeight" value="5" /></div>
+            <div><label>Location (city)</label><select id="dLocation"></select></div>
+          </div>
+          <button class="btn success" style="margin-top:16px;width:100%">Add Drone</button>
+        </form>
+      </div>
+      <div class="glass-card">
+        <h3 style="margin-bottom:14px">Fleet Overview</h3>
+        <div id="fleetSummary" class="sub"></div>
+        <button class="btn small" style="margin-top:12px" onclick="undoLast()">↺ Undo Last Action</button>
+      </div>
+    </div>
+
+    <div class="section-title"><h2 style="font-size:1rem">3D Fleet Control View</h2></div>
+    <div class="scene-wrap" id="adminFleetScene" style="height:340px">
+      <div class="scene-legend">
+        <span><i style="background:#22c55e"></i>Available</span>
+        <span><i style="background:#3b82f6"></i>Assigned</span>
+        <span><i style="background:#22d3ee"></i>In Transit</span>
+        <span><i style="background:#f59e0b"></i>Charging</span>
+        <span><i style="background:#ef4444"></i>Offline</span>
+      </div>
+    </div>
+
+    <div class="glass-card" style="margin-top:18px">
+      <h3 style="margin-bottom:14px">All Drones (sorted by ID — Binary Search Tree)</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Model</th><th>Status</th><th>Battery</th><th>Speed</th><th>Max Wt</th><th>Location</th><th></th></tr></thead>
+        <tbody id="droneBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DELIVERIES -->
+  <div id="tab-deliveries" class="tab-content" style="display:none">
+    <div class="glass-card">
+      <h3 style="margin-bottom:14px">Delivery Queue &amp; Assignment</h3>
+      <button class="btn primary" onclick="assignNext()">Assign Next Delivery (Queue / Priority Queue)</button>
+      <table style="margin-top:16px">
+        <thead><tr><th>ID</th><th>Customer</th><th>Package</th><th>Route</th><th>Priority</th><th>Drone</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="deliveryBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div id="tab-customers" class="tab-content" style="display:none">
+    <div class="glass-card">
+      <h3 style="margin-bottom:14px">Registered Customers</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th></tr></thead>
+        <tbody id="customerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div id="tab-reports" class="tab-content" style="display:none">
+    <div class="glass-card">
+      <h3 style="margin-bottom:14px">Reports (Sorted via Merge Sort)</h3>
+      <div class="row" style="max-width:400px">
+        <div><label>Range</label>
+          <select id="reportRange">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div style="align-self:flex-end"><button class="btn primary" style="margin-top:12px" onclick="loadReport()">Generate</button></div>
+      </div>
+      <div class="ai-box" id="aiSmartSummary" style="display:none"></div>
+      <table style="margin-top:16px">
+        <thead><tr><th>ID</th><th>Customer</th><th>Package</th><th>Route</th><th>Status</th><th>Distance</th><th>Booked</th></tr></thead>
+        <tbody id="reportBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Drone Delivery Management System &copy; 2026 &mdash; C++ / DSA powered backend</div>
+
+<script src="js/api.js"></script>
+<script src="js/three-scene.js"></script>
+<script src="js/drone.js"></script>
+<script src="js/fleet.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
